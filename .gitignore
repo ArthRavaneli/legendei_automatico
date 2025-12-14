@@ -4,6 +4,7 @@ videos/
 __pycache__/
 build/
 dist/
+*.bat
 
 # --- Ignorar arquivos binários pesados ---
 ffmpeg.exe

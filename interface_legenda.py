@@ -8,7 +8,7 @@ import math
 import sys
 from deep_translator import GoogleTranslator
 
-# --- CORREÇÃO DO BUG + FEEDBACK VISUAL ---
+# --- FEEDBACK VISUAL ---
 class RedirecionadorTexto:
     """
     Captura o texto que iria para o console (stderr) e joga para
@@ -17,21 +17,17 @@ class RedirecionadorTexto:
     def __init__(self, widget_var, root):
         self.widget_var = widget_var
         self.root = root
-        self.buffer = ""
 
     def write(self, text):
-        # Filtra apenas textos relevantes ou de progresso
         if text and text.strip():
-            # Usa o .after para garantir que a interface não trave ao tentar atualizar de outra thread
             self.root.after(0, lambda: self._atualizar_label(text))
 
     def _atualizar_label(self, text):
-        # Limpa quebras de linha para ficar bonito no Label
         texto_limpo = text.replace("\r", "").replace("\n", "").strip()
-        if len(texto_limpo) > 5: # Ignora lixo muito curto
-            # Se for barra de progresso do tqdm (ex: 15%|███|), mostramos
+        if len(texto_limpo) > 5:
+            # Filtra barras de progresso comuns (tqdm/whisper)
             if "%" in texto_limpo or "it/s" in texto_limpo or "Downloading" in texto_limpo:
-                self.widget_var.set(f"⏳ STATUS DO SISTEMA: {texto_limpo}")
+                self.widget_var.set(f"⏳ STATUS: {texto_limpo}")
 
     def flush(self):
         pass
@@ -47,8 +43,8 @@ INFO_MODELOS = {
     "tiny": "Rascunho Rápido: Baixa precisão. Instantâneo. Bom apenas para testar.",
     "base": "Básico: Bom para áudios de estúdio muito limpos. Pode errar pontuação.",
     "small": "Recomendado (Padrão): Equilíbrio perfeito. Ideal para YouTube/Aulas.",
-    "medium": "Cinema/Séries: Alta precisão. Entende sotaques e música. (Ideal para RTX 3060).",
-    "large": "Máxima Precisão (3GB): O mais inteligente. Se for a 1ª vez, vai demorar para baixar."
+    "medium": "Cinema/Séries: Alta precisão. Entende sotaques e música (Ideal RTX 3060).",
+    "large": "Máxima Precisão (3GB): O mais inteligente. Demora para baixar na 1ª vez."
 }
 
 # --- Cores do Tema (Dark Mode) ---
@@ -56,30 +52,32 @@ CORES = {
     "bg": "#2b2b2b", "fg": "#ffffff", "accent": "#007acc",
     "panel": "#333333", "button": "#404040", "button_hover": "#505050",
     "input_bg": "#ffffff", "input_fg": "#000000", "info_text": "#4fc3f7",
-    "status_text": "#ff9800" # Laranja para destaque de download
+    "status_text": "#ff9800", # Laranja para destaque de download
+    "danger": "#ff5555"       # Vermelho suave para cancelar
 }
 
 class LegendadorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gerador de Legendas Pro IA")
-        self.root.geometry("720x720") # Aumentei um pouco para caber o status
+        self.root.geometry("720x760") # Ajustado para caber o novo botão
         self.root.configure(bg=CORES["bg"])
         
         self.style = ttk.Style()
         self.style.theme_use('clam')
         self.configurar_estilos()
 
-        # Variáveis
+        # --- Variáveis de Controle ---
         self.video_path = tk.StringVar()
         self.device_var = tk.StringVar(value="GPU (Recomendado)")
         self.model_var = tk.StringVar(value="small")
         self.lang_origem_var = tk.StringVar(value="Inglês")
         self.lang_destino_var = tk.StringVar(value="Português")
         self.info_modelo_txt = tk.StringVar()
-        
-        # NOVA VARIÁVEL: Para mostrar o status do download em tempo real
         self.status_sistema_var = tk.StringVar(value="Aguardando comando...")
+        
+        # CONTROLE DE THREAD (CANCELAMENTO)
+        self.stop_event = threading.Event()
 
         self.criar_interface()
         self.atualizar_info_modelo() 
@@ -145,19 +143,37 @@ class LegendadorApp:
         tk.Label(frame_info, textvariable=self.info_modelo_txt, bg=CORES["panel"], fg=CORES["info_text"], 
                  font=("Segoe UI", 9), wraplength=660, justify="left", pady=8, padx=10).pack(fill=tk.BOTH)
 
-        # 4. Botão e STATUS
+        # 4. Botões e Status
         self.btn_run = ttk.Button(main_frame, text="🚀 INICIAR PROCESSO", style="Accent.TButton", command=self.iniciar_thread)
-        self.btn_run.pack(fill=tk.X, pady=(10, 5), ipady=5)
-        
-        # --- NOVO: Label de Status do Sistema (Download) ---
+        self.btn_run.pack(fill=tk.X, pady=(10, 0), ipady=5)
+
+        # Label de Status (Download/Progresso)
         lbl_status = tk.Label(main_frame, textvariable=self.status_sistema_var, 
                               bg=CORES["bg"], fg=CORES["status_text"], font=("Consolas", 9, "bold"))
-        lbl_status.pack(pady=(0, 10))
+        lbl_status.pack(pady=(5, 0))
 
-        # 5. Log
+        # --- NOVO BOTÃO DE CANCELAR ---
+        # Discreto, sem borda, fonte menor
+        self.btn_cancelar = tk.Button(
+            main_frame, 
+            text="cancelar operação", 
+            command=self.cancelar_operacao,
+            font=("Segoe UI", 8),
+            bg=CORES["bg"],         # Mesma cor do fundo para parecer transparente
+            fg=CORES["danger"],     # Texto vermelho
+            activebackground=CORES["bg"],
+            activeforeground="#ff0000",
+            relief="flat",          # Sem relevo 3D
+            bd=0,
+            cursor="hand2",
+            state="disabled"        # Começa desativado
+        )
+        self.btn_cancelar.pack(pady=(0, 10))
+
+        # 5. Log Area
         tk.Label(main_frame, text="Log Detalhado:", bg=CORES["bg"], fg="white").pack(anchor="w")
         self.log_area = scrolledtext.ScrolledText(main_frame, height=8, bg="black", fg="#00ff00", 
-                                                  font=("Consolas", 9), state='disabled', bd=0)
+                                                 font=("Consolas", 9), state='disabled', bd=0)
         self.log_area.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
 
     def atualizar_info_modelo(self, event=None):
@@ -180,13 +196,31 @@ class LegendadorApp:
             messagebox.showwarning("Atenção", "Selecione um vídeo primeiro!")
             return
         
+        # Limpa flag de parada e configura UI
+        self.stop_event.clear()
         self.btn_run.config(state="disabled", text="Processando... (Aguarde)")
+        self.btn_cancelar.config(state="normal", text="cancelar operação") # Ativa o cancelar
+        
         self.log_area.config(state='normal')
         self.log_area.delete(1.0, tk.END)
         self.log_area.config(state='disabled')
         self.status_sistema_var.set("Iniciando motor da IA...")
         
         threading.Thread(target=self.processar_video, daemon=True).start()
+
+    def cancelar_operacao(self):
+        """Função chamada pelo botão de cancelar"""
+        if not self.stop_event.is_set():
+            self.stop_event.set() # Levanta a bandeira de parada
+            self.status_sistema_var.set("Solicitando cancelamento...")
+            self.log("!!! USUÁRIO SOLICITOU CANCELAMENTO !!!")
+            self.btn_cancelar.config(state="disabled", text="Cancelando...")
+
+    def resetar_interface(self):
+        """Restaura os botões ao final ou cancelamento"""
+        self.btn_run.config(state="normal", text="🚀 INICIAR PROCESSO")
+        self.btn_cancelar.config(state="disabled", text="cancelar operação")
+        sys.stderr = sys.__stderr__ # Restaura console de erro
 
     def format_timestamp(self, seconds):
         hours = math.floor(seconds / 3600)
@@ -198,14 +232,15 @@ class LegendadorApp:
         return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
     def processar_video(self):
-        # Salva o stderr original para restaurar depois
         stderr_original = sys.stderr 
         
         try:
-            # --- ATIVA O REDIRECIONADOR DE DOWNLOAD ---
-            # Agora tudo que o Whisper tentar baixar vai aparecer na tela!
+            # Redireciona download logs
             sys.stderr = RedirecionadorTexto(self.status_sistema_var, self.root)
             
+            # --- CHECAGEM DE CANCELAMENTO 1 ---
+            if self.stop_event.is_set(): raise Exception("Cancelado pelo usuário.")
+
             video_file = self.video_path.get()
             model_name = self.model_var.get()
             device_choice = self.device_var.get()
@@ -217,25 +252,31 @@ class LegendadorApp:
             
             self.log(f"Arquivo: {os.path.basename(video_file)}")
             self.log(f"Hardware: {device.upper()}")
-            
-            if model_name == "large":
-                self.log("⚠️ Verificando arquivos do modelo 'large' (3GB)...")
-                self.status_sistema_var.set("Verificando/Baixando modelo IA...")
 
-            self.log(f"Carregando Modelo {model_name}...")
+            # --- CHECAGEM DE CANCELAMENTO 2 ---
+            if self.stop_event.is_set(): raise Exception("Cancelado pelo usuário.")
             
-            # AQUI ACONTECE O DOWNLOAD
-            # O texto de progresso vai aparecer no Label Laranja na tela
+            self.log(f"Carregando Modelo {model_name}...")
+            # Load Model (Pesado)
             model = whisper.load_model(model_name, device=device)
             
-            # Restaura o console normal depois de carregar
+            # Restaura console para evitar spam durante transcrição
             sys.stderr = stderr_original
-            self.status_sistema_var.set("IA Carregada! Transcrevendo...")
+            self.status_sistema_var.set("IA Carregada! Transcrevendo (Isso pode demorar)...")
             
+            # --- CHECAGEM DE CANCELAMENTO 3 ---
+            if self.stop_event.is_set(): raise Exception("Cancelado antes da transcrição.")
+
             lang_code_src = LANGUAGES[lang_origem_nome]
             self.log(f"Ouvindo áudio em {lang_origem_nome}...")
+            
+            # Transcrição (A parte mais pesada - O Whisper oficial não pausa fácil aqui, 
+            # mas se cancelar durante, nós descartamos o resultado depois)
             result = model.transcribe(video_file, fp16=False, language=lang_code_src)
             
+            # --- CHECAGEM DE CANCELAMENTO 4 (Pós Transcrição) ---
+            if self.stop_event.is_set(): raise Exception("Cancelado após transcrição (arquivo não salvo).")
+
             lang_code_target = LANGUAGES[lang_destino_nome]
             filename = os.path.splitext(video_file)[0]
             output_srt = f"{filename}_{lang_code_target.upper()}.srt"
@@ -248,9 +289,19 @@ class LegendadorApp:
                 tradutor = GoogleTranslator(source=lang_code_src, target=lang_code_target)
 
             self.log("Salvando arquivo .srt...")
+            
+            # Escrita do arquivo (Aqui o cancelamento é instantâneo pois é um loop)
             with open(output_srt, "w", encoding="utf-8") as f:
                 total_seg = len(result['segments'])
                 for i, segment in enumerate(result['segments']):
+                    
+                    # --- CHECAGEM DE CANCELAMENTO 5 (Dentro do Loop) ---
+                    if self.stop_event.is_set():
+                        f.close()
+                        os.remove(output_srt) # Apaga arquivo incompleto
+                        raise Exception("Cancelado durante a geração do arquivo.")
+                    # ---------------------------------------------------
+
                     start = self.format_timestamp(segment['start'])
                     end = self.format_timestamp(segment['end'])
                     text = segment['text'].strip()
@@ -273,22 +324,24 @@ class LegendadorApp:
             messagebox.showinfo("Concluído", f"Legenda salva:\n{output_srt}")
 
         except Exception as e:
-            sys.stderr = stderr_original # Garante que restaura mesmo se der erro
-            self.status_sistema_var.set("Erro Fatal")
-            self.log(f"ERRO: {str(e)}")
-            messagebox.showerror("Erro", str(e))
+            msg = str(e)
+            if "Cancelado" in msg:
+                self.status_sistema_var.set("Operação Cancelada.")
+                self.log("--- PROCESSO ABORTADO PELO USUÁRIO ---")
+                messagebox.showinfo("Cancelado", "O processo foi cancelado e nenhum arquivo foi salvo.")
+            else:
+                self.status_sistema_var.set("Erro Fatal")
+                self.log(f"ERRO: {msg}")
+                messagebox.showerror("Erro", msg)
         
         finally:
-            sys.stderr = stderr_original
-            self.btn_run.config(state="normal", text="🚀 INICIAR PROCESSO")
+            self.root.after(0, self.resetar_interface)
 
 if __name__ == "__main__":
-    # Garante que funciona como EXE
     if getattr(sys, 'frozen', False):
         caminho_base = os.path.dirname(sys.executable)
         os.environ["PATH"] += os.pathsep + caminho_base
     
-    # Se não tiver console (modo janela), cria um redirecionador vazio padrão para inicio
     if sys.stderr is None: 
         class NullWriter:
             def write(self, s): pass
