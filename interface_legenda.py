@@ -16,11 +16,11 @@ LANGUAGES = {
 
 # --- Guia dos Modelos ---
 INFO_MODELOS = {
-    "tiny": "⚡ Rascunho Rápido: Baixa precisão. Instantâneo. Bom para testar se o programa funciona.",
-    "base": "⏩ Básico: Bom para áudios muito limpos e claros. Pode errar pontuação.",
-    "small": "✅ Recomendado (Padrão): O equilíbrio perfeito entre velocidade e precisão. Ideal para YouTube.",
-    "medium": "🎬 Cinema/Séries: Alta precisão. Entende sotaques e música de fundo. (Ideal para sua RTX 3060)",
-    "large": "🧠 Máxima Precisão: O modelo mais inteligente. Lento, mas pega detalhes que os outros perdem."
+    "tiny": "Rascunho Rápido: Baixa precisão. Instantâneo. Bom apenas para testar se o programa funciona.",
+    "base": "Básico: Bom para áudios muito limpos e claros (estúdio). Pode errar pontuação.",
+    "small": "Recomendado (Padrão): O equilíbrio perfeito entre velocidade e precisão. Ideal para vídeos do YouTube.",
+    "medium": "Cinema/Séries: Alta precisão. Entende sotaques e música de fundo. (Ideal para sua RTX 3060).",
+    "large": "Máxima Precisão: O modelo mais inteligente. Lento, mas pega detalhes que os outros perdem."
 }
 
 # --- Cores do Tema (Dark Mode) ---
@@ -31,19 +31,22 @@ CORES = {
     "panel": "#333333",      # Fundo dos painéis
     "success": "#28a745",    # Verde
     "button": "#404040",     # Botão Cinza
-    "button_hover": "#505050"
+    "button_hover": "#505050",
+    "input_bg": "#ffffff",   # Fundo dos inputs (BRANCO)
+    "input_fg": "#000000",   # Texto dos inputs (PRETO)
+    "info_text": "#4fc3f7"   # Azul claro para informações
 }
 
 class LegendadorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gerador de Legendas Pro IA")
-        self.root.geometry("700x650")
+        self.root.geometry("720x680") # Aumentei um pouco a altura
         self.root.configure(bg=CORES["bg"])
         
         # Configurando Estilo (Dark Theme)
         self.style = ttk.Style()
-        self.style.theme_use('clam') # 'clam' permite customizar cores melhor
+        self.style.theme_use('clam') 
         
         self.configurar_estilos()
 
@@ -56,10 +59,10 @@ class LegendadorApp:
         self.info_modelo_txt = tk.StringVar()
 
         self.criar_interface()
-        self.atualizar_info_modelo() # Chama a primeira vez para carregar o texto
+        self.atualizar_info_modelo() 
 
     def configurar_estilos(self):
-        # Configuração geral de Frames e Labels
+        # Configuração geral
         self.style.configure("TFrame", background=CORES["bg"])
         self.style.configure("TLabelframe", background=CORES["bg"], foreground=CORES["fg"])
         self.style.configure("TLabelframe.Label", background=CORES["bg"], foreground=CORES["accent"], font=("Segoe UI", 10, "bold"))
@@ -69,16 +72,20 @@ class LegendadorApp:
         self.style.configure("TButton", font=("Segoe UI", 9, "bold"), background=CORES["button"], foreground="white", borderwidth=1)
         self.style.map("TButton", background=[("active", CORES["button_hover"])])
         
-        # Botão de Ação (Verde/Azul destaque)
         self.style.configure("Accent.TButton", background=CORES["accent"], foreground="white", font=("Segoe UI", 11, "bold"))
         self.style.map("Accent.TButton", background=[("active", "#005f9e")])
 
-        # Inputs
-        self.style.configure("TEntry", fieldbackground=CORES["panel"], foreground="white")
-        self.style.configure("TCombobox", fieldbackground=CORES["panel"], foreground="white", arrowcolor="white")
+        # --- MUDANÇA 1: Inputs com Alto Contraste (Fundo Branco, Letra Preta) ---
+        self.style.configure("TEntry", fieldbackground=CORES["input_bg"], foreground=CORES["input_fg"])
+        
+        self.style.configure("TCombobox", fieldbackground=CORES["input_bg"], foreground=CORES["input_fg"], 
+                             background=CORES["button"], arrowcolor="white")
+        # Hack para garantir que o texto do Combobox fique preto
+        self.root.option_add("*TCombobox*Listbox*Background", CORES["input_bg"])
+        self.root.option_add("*TCombobox*Listbox*Foreground", CORES["input_fg"])
 
     def criar_interface(self):
-        # Container Principal com Padding
+        # Container Principal
         main_frame = ttk.Frame(self.root, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -87,37 +94,37 @@ class LegendadorApp:
                               bg=CORES["bg"], fg=CORES["accent"], font=("Segoe UI", 18, "bold"))
         lbl_titulo.pack(pady=(0, 20))
 
-        # 2. Seleção de Arquivo (Painel)
+        # 2. Seleção de Arquivo
         pnl_arquivo = ttk.LabelFrame(main_frame, text=" Passo 1: Selecione o Vídeo ", padding="15")
         pnl_arquivo.pack(fill=tk.X, pady=5)
         
         frame_input = ttk.Frame(pnl_arquivo)
         frame_input.pack(fill=tk.X)
         
-        self.entry_path = tk.Entry(frame_input, textvariable=self.video_path, bg=CORES["panel"], fg="white", 
-                                   insertbackground="white", font=("Consolas", 10), bd=0, highlightthickness=1)
+        self.entry_path = tk.Entry(frame_input, textvariable=self.video_path, 
+                                   bg=CORES["input_bg"], fg=CORES["input_fg"], # Forçando cores
+                                   font=("Consolas", 10), bd=0, highlightthickness=1)
         self.entry_path.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=5, padx=(0, 10))
         
         btn_browse = ttk.Button(frame_input, text="📂 Procurar...", command=self.escolher_arquivo)
         btn_browse.pack(side=tk.RIGHT)
 
-        # 3. Configurações (Grid)
+        # 3. Configurações
         pnl_config = ttk.LabelFrame(main_frame, text=" Passo 2: Configurações ", padding="15")
         pnl_config.pack(fill=tk.X, pady=15)
 
-        # Grid layout dentro do painel
-        # Linha 1: Hardware e Modelo
+        # Grid layout
         ttk.Label(pnl_config, text="Processamento:").grid(row=0, column=0, sticky="w", pady=5)
         ttk.Combobox(pnl_config, textvariable=self.device_var, values=["GPU (Recomendado)", "CPU (Lento)"], 
                      state="readonly", width=18).grid(row=0, column=1, sticky="w", padx=10)
 
         ttk.Label(pnl_config, text="Precisão (Modelo):").grid(row=0, column=2, sticky="w", pady=5, padx=(20, 0))
         combo_modelo = ttk.Combobox(pnl_config, textvariable=self.model_var, values=list(INFO_MODELOS.keys()), 
-                                    state="readonly", width=10)
+                                    state="readonly", width=15)
         combo_modelo.grid(row=0, column=3, sticky="w", padx=10)
         combo_modelo.bind("<<ComboboxSelected>>", self.atualizar_info_modelo)
 
-        # Linha 2: Idiomas
+        # Linha 2
         ttk.Label(pnl_config, text="Idioma do Vídeo:").grid(row=1, column=0, sticky="w", pady=15)
         ttk.Combobox(pnl_config, textvariable=self.lang_origem_var, values=list(LANGUAGES.keys()), 
                      state="readonly", width=18).grid(row=1, column=1, sticky="w", padx=10)
@@ -126,12 +133,17 @@ class LegendadorApp:
         ttk.Combobox(pnl_config, textvariable=self.lang_destino_var, values=list(LANGUAGES.keys()), 
                      state="readonly", width=18).grid(row=1, column=3, sticky="w", padx=10)
 
-        # Label de Ajuda do Modelo (Destaque)
-        lbl_info = tk.Label(pnl_config, textvariable=self.info_modelo_txt, 
-                            bg=CORES["panel"], fg="#ffd700", font=("Segoe UI", 9), wraplength=550, pady=5)
-        lbl_info.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(10, 0))
+        # --- MUDANÇA 2: Label de Informação mais clara ---
+        # Criei um frame só para a info para dar destaque
+        frame_info = tk.Frame(pnl_config, bg=CORES["panel"], bd=1, relief="flat")
+        frame_info.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(15, 0))
+        
+        lbl_info = tk.Label(frame_info, textvariable=self.info_modelo_txt, 
+                            bg=CORES["panel"], fg=CORES["info_text"], 
+                            font=("Segoe UI", 9), wraplength=580, justify="left", pady=8, padx=10)
+        lbl_info.pack(fill=tk.BOTH)
 
-        # 4. Botão Gigante
+        # 4. Botão
         self.btn_run = ttk.Button(main_frame, text="🚀 INICIAR PROCESSO", style="Accent.TButton", command=self.iniciar_thread)
         self.btn_run.pack(fill=tk.X, pady=10, ipady=5)
 
@@ -143,8 +155,10 @@ class LegendadorApp:
 
     def atualizar_info_modelo(self, event=None):
         modelo = self.model_var.get()
-        texto = INFO_MODELOS.get(modelo, "")
-        self.info_modelo_txt.set(texto)
+        descricao = INFO_MODELOS.get(modelo, "")
+        # Texto agora inclui o nome do modelo para conectar as coisas
+        texto_final = f"ℹ️ SOBRE O MODELO '{modelo.upper()}': {descricao}"
+        self.info_modelo_txt.set(texto_final)
 
     def log(self, mensagem):
         self.log_area.config(state='normal')
@@ -189,7 +203,6 @@ class LegendadorApp:
             lang_origem_nome = self.lang_origem_var.get()
             lang_destino_nome = self.lang_destino_var.get()
             
-            # Hardware
             use_gpu = "GPU" in device_choice
             device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
             
@@ -198,16 +211,13 @@ class LegendadorApp:
             if device == "cuda":
                 self.log(f"GPU Detectada: {torch.cuda.get_device_name(0)}")
 
-            # Whisper
             self.log(f"Carregando IA ({model_name})...")
             model = whisper.load_model(model_name, device=device)
             
-            # Transcrição
             lang_code_src = LANGUAGES[lang_origem_nome]
             self.log(f"Ouvindo áudio em {lang_origem_nome}...")
             result = model.transcribe(video_file, fp16=False, language=lang_code_src)
             
-            # Tradução e Salvamento
             lang_code_target = LANGUAGES[lang_destino_nome]
             filename = os.path.splitext(video_file)[0]
             output_srt = f"{filename}_{lang_code_target.upper()}.srt"
@@ -230,7 +240,7 @@ class LegendadorApp:
                         try:
                             text = tradutor.translate(text)
                         except:
-                            pass # Mantém original se falhar
+                            pass 
                     
                     f.write(f"{i + 1}\n")
                     f.write(f"{start} --> {end}\n")
