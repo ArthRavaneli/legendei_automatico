@@ -1,7 +1,20 @@
+# --- Ignorar pastas de ambiente e compilação ---
 venv/
 videos/
+__pycache__/
 build/
 dist/
-.env
-__pycache__/
-*.csv
+
+# --- Ignorar arquivos binários pesados ---
+ffmpeg.exe
+*.exe
+*.zip
+
+# --- Ignorar vídeos de teste ---
+videos/
+*.mp4
+*.mkv
+*.srt
+
+# --- Configurações do VS Code (opcional) ---
+.vscode/
