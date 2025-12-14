@@ -15,7 +15,7 @@ if %errorlevel% neq 0 (
 
 :: Roda o PyInstaller
 echo Gerando executavel...
-pyinstaller --clean --noconfirm GeradorLegendasIA.spec
+pyinstaller --clean --noconfirm interface_legenda.spec
 
 :: Copia o FFmpeg
 echo Copiando FFmpeg...

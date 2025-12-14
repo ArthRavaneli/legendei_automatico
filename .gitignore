@@ -1,10 +1,9 @@
 # --- Ignorar pastas de ambiente e compilação ---
 venv/
-videos/
 __pycache__/
 build/
 dist/
-*.bat
+/*.bat
 
 # --- Ignorar arquivos binários pesados ---
 ffmpeg.exe

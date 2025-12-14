@@ -60,7 +60,7 @@ class LegendadorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Gerador de Legendas Pro IA")
-        self.root.geometry("720x760") # Ajustado para caber o novo botão
+        self.root.geometry("740x760") # Ligeiramente mais largo
         self.root.configure(bg=CORES["bg"])
         
         self.style = ttk.Style()
@@ -108,40 +108,52 @@ class LegendadorApp:
         # 2. Arquivo
         pnl_arquivo = ttk.LabelFrame(main_frame, text=" Passo 1: Selecione o Vídeo ", padding="15")
         pnl_arquivo.pack(fill=tk.X, pady=5)
+        
         frame_input = ttk.Frame(pnl_arquivo)
         frame_input.pack(fill=tk.X)
+        
         tk.Entry(frame_input, textvariable=self.video_path, bg=CORES["input_bg"], fg=CORES["input_fg"], 
                  font=("Consolas", 10), bd=0, highlightthickness=1).pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=5, padx=(0, 10))
+        
         ttk.Button(frame_input, text="📂 Procurar...", command=self.escolher_arquivo).pack(side=tk.RIGHT)
 
         # 3. Configurações
         pnl_config = ttk.LabelFrame(main_frame, text=" Passo 2: Configurações ", padding="15")
         pnl_config.pack(fill=tk.X, pady=15)
         
-        # Grid
+        # --- CORREÇÃO DE LAYOUT E ALINHAMENTO ---
+        # Configura as colunas para expandirem (Peso 1 nas colunas de input)
+        pnl_config.columnconfigure(1, weight=1) # Coluna do Combobox Esquerda
+        pnl_config.columnconfigure(3, weight=1) # Coluna do Combobox Direita
+        
+        # Linha 0
         ttk.Label(pnl_config, text="Processamento:").grid(row=0, column=0, sticky="w", pady=5)
         ttk.Combobox(pnl_config, textvariable=self.device_var, values=["GPU (Recomendado)", "CPU (Lento)"], 
-                     state="readonly", width=18).grid(row=0, column=1, sticky="w", padx=10)
+                     state="readonly").grid(row=0, column=1, sticky="ew", padx=(5, 15)) # sticky="ew" estica
         
-        ttk.Label(pnl_config, text="Precisão (Modelo):").grid(row=0, column=2, sticky="w", pady=5, padx=(20, 0))
+        ttk.Label(pnl_config, text="Precisão (Modelo):").grid(row=0, column=2, sticky="w", pady=5)
         combo_mod = ttk.Combobox(pnl_config, textvariable=self.model_var, values=list(INFO_MODELOS.keys()), 
-                                 state="readonly", width=15)
-        combo_mod.grid(row=0, column=3, sticky="w", padx=10)
+                                 state="readonly")
+        combo_mod.grid(row=0, column=3, sticky="ew", padx=(5, 0)) # sticky="ew" estica
         combo_mod.bind("<<ComboboxSelected>>", self.atualizar_info_modelo)
 
+        # Linha 1
         ttk.Label(pnl_config, text="Idioma do Vídeo:").grid(row=1, column=0, sticky="w", pady=15)
         ttk.Combobox(pnl_config, textvariable=self.lang_origem_var, values=list(LANGUAGES.keys()), 
-                     state="readonly", width=18).grid(row=1, column=1, sticky="w", padx=10)
+                     state="readonly").grid(row=1, column=1, sticky="ew", padx=(5, 15))
         
-        ttk.Label(pnl_config, text="Traduzir para:").grid(row=1, column=2, sticky="w", pady=15, padx=(20, 0))
+        ttk.Label(pnl_config, text="Traduzir para:").grid(row=1, column=2, sticky="w", pady=15)
         ttk.Combobox(pnl_config, textvariable=self.lang_destino_var, values=list(LANGUAGES.keys()), 
-                     state="readonly", width=18).grid(row=1, column=3, sticky="w", padx=10)
+                     state="readonly").grid(row=1, column=3, sticky="ew", padx=(5, 0))
 
-        # Info Label
+        # Info Label (Centralizada e Expandida)
         frame_info = tk.Frame(pnl_config, bg=CORES["panel"], bd=1, relief="flat")
         frame_info.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(15, 0))
-        tk.Label(frame_info, textvariable=self.info_modelo_txt, bg=CORES["panel"], fg=CORES["info_text"], 
-                 font=("Segoe UI", 9), wraplength=660, justify="left", pady=8, padx=10).pack(fill=tk.BOTH)
+        
+        # justify="center" para centralizar o texto internamente
+        self.lbl_info = tk.Label(frame_info, textvariable=self.info_modelo_txt, bg=CORES["panel"], fg=CORES["info_text"], 
+                 font=("Segoe UI", 9), wraplength=680, justify="center", pady=8, padx=10)
+        self.lbl_info.pack(fill=tk.BOTH, expand=True)
 
         # 4. Botões e Status
         self.btn_run = ttk.Button(main_frame, text="🚀 INICIAR PROCESSO", style="Accent.TButton", command=self.iniciar_thread)
@@ -152,21 +164,20 @@ class LegendadorApp:
                               bg=CORES["bg"], fg=CORES["status_text"], font=("Consolas", 9, "bold"))
         lbl_status.pack(pady=(5, 0))
 
-        # --- NOVO BOTÃO DE CANCELAR ---
-        # Discreto, sem borda, fonte menor
+        # Botão Cancelar Discreto
         self.btn_cancelar = tk.Button(
             main_frame, 
             text="cancelar operação", 
             command=self.cancelar_operacao,
             font=("Segoe UI", 8),
-            bg=CORES["bg"],         # Mesma cor do fundo para parecer transparente
-            fg=CORES["danger"],     # Texto vermelho
+            bg=CORES["bg"],         
+            fg=CORES["danger"],     
             activebackground=CORES["bg"],
             activeforeground="#ff0000",
-            relief="flat",          # Sem relevo 3D
+            relief="flat",          
             bd=0,
             cursor="hand2",
-            state="disabled"        # Começa desativado
+            state="disabled"        
         )
         self.btn_cancelar.pack(pady=(0, 10))
 
@@ -179,7 +190,7 @@ class LegendadorApp:
     def atualizar_info_modelo(self, event=None):
         modelo = self.model_var.get()
         descricao = INFO_MODELOS.get(modelo, "")
-        self.info_modelo_txt.set(f"ℹ️ SOBRE O MODELO '{modelo.upper()}':\n{descricao}")
+        self.info_modelo_txt.set(f"🛈 SOBRE O MODELO '{modelo.upper()}':\n{descricao}")
 
     def log(self, mensagem):
         self.log_area.config(state='normal')
@@ -196,10 +207,9 @@ class LegendadorApp:
             messagebox.showwarning("Atenção", "Selecione um vídeo primeiro!")
             return
         
-        # Limpa flag de parada e configura UI
         self.stop_event.clear()
         self.btn_run.config(state="disabled", text="Processando... (Aguarde)")
-        self.btn_cancelar.config(state="normal", text="cancelar operação") # Ativa o cancelar
+        self.btn_cancelar.config(state="normal", text="cancelar operação")
         
         self.log_area.config(state='normal')
         self.log_area.delete(1.0, tk.END)
@@ -209,18 +219,16 @@ class LegendadorApp:
         threading.Thread(target=self.processar_video, daemon=True).start()
 
     def cancelar_operacao(self):
-        """Função chamada pelo botão de cancelar"""
         if not self.stop_event.is_set():
-            self.stop_event.set() # Levanta a bandeira de parada
+            self.stop_event.set()
             self.status_sistema_var.set("Solicitando cancelamento...")
             self.log("!!! USUÁRIO SOLICITOU CANCELAMENTO !!!")
             self.btn_cancelar.config(state="disabled", text="Cancelando...")
 
     def resetar_interface(self):
-        """Restaura os botões ao final ou cancelamento"""
         self.btn_run.config(state="normal", text="🚀 INICIAR PROCESSO")
         self.btn_cancelar.config(state="disabled", text="cancelar operação")
-        sys.stderr = sys.__stderr__ # Restaura console de erro
+        sys.stderr = sys.__stderr__
 
     def format_timestamp(self, seconds):
         hours = math.floor(seconds / 3600)
@@ -235,10 +243,8 @@ class LegendadorApp:
         stderr_original = sys.stderr 
         
         try:
-            # Redireciona download logs
             sys.stderr = RedirecionadorTexto(self.status_sistema_var, self.root)
             
-            # --- CHECAGEM DE CANCELAMENTO 1 ---
             if self.stop_event.is_set(): raise Exception("Cancelado pelo usuário.")
 
             video_file = self.video_path.get()
@@ -253,29 +259,22 @@ class LegendadorApp:
             self.log(f"Arquivo: {os.path.basename(video_file)}")
             self.log(f"Hardware: {device.upper()}")
 
-            # --- CHECAGEM DE CANCELAMENTO 2 ---
             if self.stop_event.is_set(): raise Exception("Cancelado pelo usuário.")
             
             self.log(f"Carregando Modelo {model_name}...")
-            # Load Model (Pesado)
             model = whisper.load_model(model_name, device=device)
             
-            # Restaura console para evitar spam durante transcrição
             sys.stderr = stderr_original
-            self.status_sistema_var.set("IA Carregada! Transcrevendo (Isso pode demorar)...")
+            self.status_sistema_var.set("IA Carregada! Transcrevendo...")
             
-            # --- CHECAGEM DE CANCELAMENTO 3 ---
             if self.stop_event.is_set(): raise Exception("Cancelado antes da transcrição.")
 
             lang_code_src = LANGUAGES[lang_origem_nome]
             self.log(f"Ouvindo áudio em {lang_origem_nome}...")
             
-            # Transcrição (A parte mais pesada - O Whisper oficial não pausa fácil aqui, 
-            # mas se cancelar durante, nós descartamos o resultado depois)
             result = model.transcribe(video_file, fp16=False, language=lang_code_src)
             
-            # --- CHECAGEM DE CANCELAMENTO 4 (Pós Transcrição) ---
-            if self.stop_event.is_set(): raise Exception("Cancelado após transcrição (arquivo não salvo).")
+            if self.stop_event.is_set(): raise Exception("Cancelado após transcrição.")
 
             lang_code_target = LANGUAGES[lang_destino_nome]
             filename = os.path.splitext(video_file)[0]
@@ -290,17 +289,14 @@ class LegendadorApp:
 
             self.log("Salvando arquivo .srt...")
             
-            # Escrita do arquivo (Aqui o cancelamento é instantâneo pois é um loop)
             with open(output_srt, "w", encoding="utf-8") as f:
                 total_seg = len(result['segments'])
                 for i, segment in enumerate(result['segments']):
                     
-                    # --- CHECAGEM DE CANCELAMENTO 5 (Dentro do Loop) ---
                     if self.stop_event.is_set():
                         f.close()
-                        os.remove(output_srt) # Apaga arquivo incompleto
+                        os.remove(output_srt)
                         raise Exception("Cancelado durante a geração do arquivo.")
-                    # ---------------------------------------------------
 
                     start = self.format_timestamp(segment['start'])
                     end = self.format_timestamp(segment['end'])
