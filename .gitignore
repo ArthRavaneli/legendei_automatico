@@ -1,0 +1,5 @@
+venv/
+videos/
+.env
+__pycache__/
+*.csv
