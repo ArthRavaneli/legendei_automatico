@@ -1,7 +1,7 @@
-![Python](https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![GUI](https://img.shields.io/badge/Frontend-Tkinter-FF7F50?style=for-the-badge)
-![AI](https://img.shields.io/badge/AI-OpenAI%20Whisper-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Functional-brightgreen?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)
+![Tkinter](https://img.shields.io/badge/Frontend-Tkinter-blue.svg)
+![Whisper](https://img.shields.io/badge/AI-OpenAI%20Whisper-74aa9c.svg?logo=openai&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Functional-brightgreen.svg)
 
 
 # 🎬 Gerador de Legendas Pro IA
