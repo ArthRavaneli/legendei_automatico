@@ -1,3 +1,12 @@
+<div align="center">
+
+![Python](https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![GUI](https://img.shields.io/badge/Frontend-Tkinter-FF7F50?style=for-the-badge)
+![AI](https://img.shields.io/badge/AI-OpenAI%20Whisper-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Functional-brightgreen?style=for-the-badge)
+
+</div>
+
 # 🎬 Gerador de Legendas Pro IA
 
 Aplicação desktop para gerar e traduzir legendas automaticamente utilizando a inteligência do **OpenAI Whisper**.
