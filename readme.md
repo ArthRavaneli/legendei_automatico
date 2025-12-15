@@ -3,7 +3,7 @@
 Um aplicativo de desktop robusto desenvolvido em Python para gerar e traduzir legendas de vídeos automaticamente usando a inteligência artificial **OpenAI Whisper**.
 
 <p align="center">
-  <img src="imagens_readme/Interface principal.png" width="90%">
+  <img src="imagens_readme/Interface principal.png" width="75%">
 </p>
 
 ## ✨ Funcionalidades
