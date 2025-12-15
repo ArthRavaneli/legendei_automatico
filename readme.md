@@ -3,7 +3,6 @@
 ![Whisper](https://img.shields.io/badge/AI-OpenAI%20Whisper-74aa9c.svg?logo=openai&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Functional-brightgreen.svg)
 
-
 # 🎬 Gerador de Legendas Pro IA
 
 Aplicação desktop para gerar e traduzir legendas automaticamente utilizando a inteligência do **OpenAI Whisper**.
